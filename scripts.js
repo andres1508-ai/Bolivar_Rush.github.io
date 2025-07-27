@@ -3192,8 +3192,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (asistenteBtn) {
         asistenteBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            console.log('🤖 Botón asistente virtual clickeado');
             handleVirtualAdvisorClick();
         });
+    } else {
+        console.error('❌ No se encontró el botón asistente-btn');
     }
     
     // Ajusta el canvas cuando la ventana cambia de tamaño
@@ -3287,8 +3290,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Función que abre una ventana emergente (modal)
     function openModal(config) {
+        console.log('📱 openModal llamada con config:', config);
+        
         appState.modal = { ...appState.modal, isOpen: true, scrollOffset: 0, totalChatHeight: 0, ...config };
+        console.log('📱 Estado del modal actualizado:', appState.modal);
+        
         if (config.type === 'advisor_chat') {
+            console.log('💬 Configurando chat interface...');
             chatInterface.style.display = 'flex'; // Muestra la interfaz de chat
             const { width, height } = canvas.getBoundingClientRect();
             const modalW = Math.min(width * 0.8, 600);
@@ -3296,8 +3304,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalY = (height - modalH) / 2;
             chatInterface.style.width = `${modalW - 60}px`;
             chatInterface.style.bottom = `${modalY + 15}px`;
+            console.log('💬 Chat interface configurado');
         }
+        
+        console.log('🎨 Llamando a draw()...');
         draw(); // Redibuja para mostrar la ventana
+        console.log('✅ openModal completado');
     }
 
     // Función que cierra la ventana emergente
@@ -3308,46 +3320,162 @@ document.addEventListener('DOMContentLoaded', () => {
         draw(); // Redibuja sin la ventana
     }
 
-    // Función que se comunica con la inteligencia artificial (Gemini de Google)
+    // Función que proporciona respuestas inteligentes del asesor virtual sin depender de APIs externas
     async function callGemini() {
         appState.modal.isLoading = true; // Muestra que está cargando
         draw();
 
-        const payload = { contents: appState.modal.chatHistory }; // Envía el historial de chat
-        const apiKey = ""; // IMPORTANTE: En una aplicación real, esto no debería estar visible
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-        
+        // Simular un pequeño retraso para que parezca más real
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
+
         try {
-            // Envía la consulta a la API de Google
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
+            const userMessage = appState.modal.chatHistory[appState.modal.chatHistory.length - 1];
+            const userInput = userMessage.parts[0].text.toLowerCase();
             
-            // Si la respuesta es exitosa, agrega la respuesta al chat
-            if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                const text = result.candidates[0].content.parts[0].text;
-                appState.modal.chatHistory.push({ role: 'model', parts: [{ text }] });
-            } else {
-                throw new Error('Respuesta inesperada de la API.');
+            let response = generateIntelligentResponse(userInput);
+            
+            // Si no hay respuesta específica, usar respuesta contextual
+            if (!response) {
+                response = generateContextualResponse(userInput);
             }
+            
+            // Agregar la respuesta al historial
+            appState.modal.chatHistory.push({ 
+                role: 'model', 
+                parts: [{ text: response }] 
+            });
+            
         } catch (error) {
-            console.error("Error llamando a Gemini API:", error);
+            console.error("Error generando respuesta:", error);
             // Si hay error, muestra un mensaje de disculpa
             appState.modal.chatHistory.push({ 
                 role: 'model', 
-                parts: [{ text: 'Lo siento, hubo un problema al conectar con el asesor. Inténtalo de nuevo.' }] 
+                parts: [{ text: 'Lo siento, hubo un problema al procesar tu consulta. ¿Podrías reformular tu pregunta? 😊' }] 
             });
         } finally {
             appState.modal.isLoading = false; // Ya no está cargando
             // Hace scroll automático hacia abajo para mostrar la respuesta nueva
             const chatAreaHeight = Math.min(canvas.getBoundingClientRect().height * 0.8, 500) - 160;
-            const maxScroll = Math.max(0, appState.modal.totalChatHistory - chatAreaHeight);
+            const maxScroll = Math.max(0, appState.modal.totalChatHeight - chatAreaHeight);
             appState.modal.scrollOffset = maxScroll;
             draw();
         }
+    }
+
+    // Función para generar respuestas inteligentes basadas en el contenido del mensaje
+    function generateIntelligentResponse(userInput) {
+        const responses = {
+            // Saludos y cortesías
+            'hola|saludo|buenas': [
+                "¡Hola! 😊 Me da mucho gusto conocerte. Soy tu asesor virtual de Seguros Bolívar y estoy aquí para ayudarte a encontrar la protección perfecta para tu estilo de vida. ¿Qué te gustaría proteger hoy?",
+                "¡Hola! 👋 ¡Qué bueno que estés aquí! Soy tu asesor especializado en seguros para jóvenes. ¿En qué puedo ayudarte a proteger tu día a día?",
+                "¡Hola! 🌟 Bienvenido a Seguros Bolívar. Estoy aquí para hacer que elegir tu seguro sea súper fácil. ¿Qué quieres asegurar?"
+            ],
+            
+            // Preguntas sobre patinetas
+            'patineta|scooter|eléctrica': [
+                "¡Excelente elección! 🛴 Las patinetas eléctricas son el futuro de la movilidad urbana. Tenemos 3 planes perfectos:\n\n🔸 **Plan Esencial** ($32.900/mes): Ideal para empezar, cubre hurto calificado y daños a terceros hasta $10M\n🔸 **Plan Plus** ($48.900/mes): Incluye daño total accidental y grúa especializada\n🔸 **Plan Premium** ($65.900/mes): La protección más completa con patineta de reemplazo\n\n¿Cuál te interesa más?",
+                "¡Perfecto! 🛴⚡ Las patinetas eléctricas necesitan protección especializada. Nuestros planes cubren desde hurto hasta daños accidentales, y el Premium incluso incluye una patineta de cortesía mientras reparamos la tuya. ¿Qué tan seguido la usas?"
+            ],
+            
+            // Preguntas sobre bicicletas
+            'bicicleta|bici|bike': [
+                "¡Genial! 🚴‍♂️ Las bicis son libertad pura. Nuestros planes están diseñados para ciclistas urbanos:\n\n🔸 **Plan Esencial** ($28.900/mes): Perfecto para uso básico, incluye kit de herramientas\n🔸 **Plan Plus** ($42.900/mes): Con mecánico a domicilio mensual\n🔸 **Plan Premium** ($58.900/mes): Bici de cortesía + programa fitness\n\n¿Tu bici es tu medio de transporte principal?",
+                "¡Excelente! 🚴‍♀️ Los ciclistas saben que la bici no es solo transporte, es estilo de vida. Nuestros seguros incluyen desde protección básica hasta servicios premium como mecánico a domicilio. ¿Qué tipo de ciclista eres?"
+            ],
+            
+            // Preguntas sobre motos
+            'moto|motocicleta|eléctrica': [
+                "¡Increíble! 🏍️ Las motos eléctricas son el futuro. Tenemos cobertura especializada:\n\n🔸 **Plan Esencial** ($45.900/mes): Para comenzar con seguridad\n🔸 **Plan Plus** ($68.900/mes): Grúa especializada y talleres certificados\n🔸 **Plan Premium** ($89.900/mes): Moto de cortesía + seguro de batería\n\n¿Ya tienes moto eléctrica o estás pensando en comprar una?",
+                "¡Excelente elección! 🏍️⚡ Las motos eléctricas requieren atención especializada. Nuestros talleres están certificados para vehículos eléctricos y ofrecemos hasta moto de cortesía. ¿De qué cilindrada estamos hablando?"
+            ],
+            
+            // Preguntas sobre celulares
+            'celular|teléfono|smartphone|móvil': [
+                "¡Perfecto! 📱 Tu celular es tu vida digital. Nuestros planes están diseñados para la generación conectada:\n\n🔸 **Plan Esencial** ($29.900/mes): Protección básica contra hurto y daños\n🔸 **Plan Plus** ($42.900/mes): Incluye reparación de pantalla y servicio a domicilio\n🔸 **Plan Premium** ($58.900/mes): Cobertura total + celular de respaldo\n\n¿Qué marca y modelo tienes?",
+                "¡Excelente! 📱✨ Tu smartphone merece la mejor protección. Cubrimos desde pantallas rotas hasta daños por líquidos. El plan Premium incluso incluye transferencia de datos. ¿Tu celular es tu herramienta de trabajo?"
+            ],
+            
+            // Preguntas sobre portátiles
+            'portátil|laptop|computador|pc': [
+                "¡Genial! 💻 Tu portátil es tu oficina móvil. Tenemos cobertura especializada para equipos de trabajo:\n\n🔸 **Plan Esencial** ($55.900/mes): Protección básica + soporte técnico\n🔸 **Plan Plus** ($74.900/mes): Equipos de préstamo durante reparaciones\n🔸 **Plan Premium** ($94.900/mes): Respaldo automático en la nube\n\n¿Es tu equipo de trabajo o estudio?",
+                "¡Perfecto! 💻⚡ Los equipos de trabajo necesitan protección premium. Incluimos recuperación de datos y hasta equipos de reemplazo. ¿Qué tan crítico es tu portátil para tu día a día?"
+            ],
+            
+            // Preguntas sobre gadgets
+            'audífono|tablet|gadget|dispositivo': [
+                "¡Excelente! 🎧 Los gadgets completan tu setup perfecto. Nuestros planes cubren audífonos, tablets y más:\n\n🔸 **Plan Esencial** ($18.900/mes): Ideal para audífonos básicos\n🔸 **Plan Plus** ($26.900/mes): Con reemplazo temporal\n🔸 **Plan Premium** ($34.900/mes): Optimización de audio incluida\n\n¿Qué dispositivos quieres proteger?",
+                "¡Genial! 🎧📱 Los gadgets son el toque final de tu estilo digital. Desde audífonos hasta tablets, tenemos cobertura especializada. ¿Son profesionales o para entretenimiento?"
+            ],
+            
+            // Preguntas sobre precios
+            'precio|costo|cuánto|valor|barato|caro': [
+                "¡Excelente pregunta! 💰 Nuestros precios están diseñados para jóvenes:\n\n**🚀 TRANSPORTE:**\n• Patinetas: $32.900 - $65.900\n• Bicicletas: $28.900 - $58.900\n• Motos: $45.900 - $89.900\n\n**💻 TECNOLOGÍA:**\n• Celulares: $29.900 - $58.900\n• Portátiles: $55.900 - $94.900\n• Gadgets: $18.900 - $34.900\n\n¿Cuál se ajusta mejor a tu presupuesto?",
+                "¡Buena pregunta! 💸 Tenemos opciones desde $18.900/mes. Lo mejor es que puedes combinar planes y hay descuentos con bancos aliados. ¿Tienes algún presupuesto en mente?"
+            ],
+            
+            // Preguntas sobre coberturas
+            'cubre|cobertura|protege|incluye|qué pasa si': [
+                "¡Excelente pregunta! 🛡️ Nuestras coberturas son súper completas:\n\n**BÁSICAS:** Hurto calificado, daños accidentales\n**PLUS:** + Daños parciales, servicios técnicos\n**PREMIUM:** + Hurto simple, coberturas especiales\n\n**EXTRA:** Grúas, equipos de reemplazo, soporte 24/7\n\n¿Hay algún riesgo específico que te preocupa?",
+                "¡Súper importante preguntar! 🔒 Cubrimos desde lo básico (hurto, daños) hasta lo premium (líquidos, sobretensión). Cada plan tiene beneficios únicos. ¿Qué tipo de accidentes te preocupan más?"
+            ],
+            
+            // Comparaciones y recomendaciones
+            'mejor|recomendación|cuál|diferencia|comparar': [
+                "¡Me encanta que preguntes! 🤔 Para recomendarte el mejor plan necesito conocerte:\n\n📍 **¿Cómo te mueves?** (pie, bici, moto, patineta)\n💼 **¿Trabajas/estudias?** (qué dispositivos usas)\n🏠 **¿Dónde vives?** (zona de riesgo)\n💰 **¿Cuál es tu presupuesto?**\n\nCon esta info te armo el plan perfecto. ¿Me cuentas un poco?",
+                "¡Excelente! 🎯 Para darte la mejor recomendación, cuéntame sobre tu día típico. ¿Eres más de transporte o tecnología? ¿Estudias, trabajas, o ambos? Con eso te armo un plan a tu medida."
+            ],
+            
+            // Beneficios extras
+            'beneficio|extra|adicional|ventaja|incluye': [
+                "¡Los beneficios extras son lo mejor! ✨ Tenemos dos categorías:\n\n**🚀 TRANSPORTE:**\n• Descuentos en cascos y equipo\n• Marcación segura anti-robo\n• Mantenimiento preventivo gratis\n\n**💻 TECNOLOGÍA:**\n• 1TB almacenamiento en la nube\n• Day-Pass en co-workings\n• Apps de productividad\n\n¿Cuál categoría te interesa más?",
+                "¡Los extras hacen la diferencia! 🌟 Desde equipos de protección hasta almacenamiento en la nube. Depende de tus planes activos. ¿Ya tienes algún seguro con nosotros?"
+            ],
+            
+            // Proceso y trámites
+            'cómo|proceso|trámite|activar|contratar': [
+                "¡Súper fácil! 📱 Todo es 100% digital:\n\n1️⃣ **Eliges** tu plan ideal\n2️⃣ **Configuras** tus beneficios extras\n3️⃣ **Pagas** con descuentos bancarios\n4️⃣ **¡Listo!** Protección inmediata\n\n✨ **Sin papeleos, sin filas, sin complicaciones**\n\n¿Quieres que empecemos ahora mismo?",
+                "¡Es súper simple! 🚀 En menos de 5 minutos tienes tu seguro activo. Todo desde la app, con gestión digital completa. ¿Te ayudo a elegir tu plan ahora?"
+            ],
+            
+            // Descuentos y promociones
+            'descuento|promoción|oferta|rebaja': [
+                "¡Tenemos descuentos geniales! 🎉\n\n💳 **Tarjetas aliadas:** 10% descuento + puntos\n🏦 **Débito aliado:** 15% cashback directo\n🎁 **Combos:** Descuentos por múltiples seguros\n💰 **Estudiantes:** Tarifas preferenciales\n\n¿Tienes cuenta en algún banco aliado?",
+                "¡Sí, tenemos promociones! 💸 Los mejores descuentos son con bancos aliados. El débito te da 15% cashback inmediato. ¿Quieres que revisemos tus opciones de pago?"
+            ]
+        };
+        
+        // Buscar coincidencias en las respuestas
+        for (const [keywords, responseList] of Object.entries(responses)) {
+            if (keywords.split('|').some(keyword => userInput.includes(keyword))) {
+                return responseList[Math.floor(Math.random() * responseList.length)];
+            }
+        }
+        
+        return null; // No hay respuesta específica
+    }
+
+    // Función para generar respuestas contextuales cuando no hay coincidencia específica
+    function generateContextualResponse(userInput) {
+        const activeSeguro = getActiveSeguro();
+        
+        // Respuestas generales amigables
+        const generalResponses = [
+            "¡Interesante! 🤔 Cuéntame más detalles para poder ayudarte mejor. ¿Qué tipo de seguro te interesa: transporte (patinetas, bicis, motos) o tecnología (celulares, portátiles, gadgets)?",
+            "¡Genial que preguntes! 😊 Para darte la mejor recomendación, necesito conocer un poco más sobre tu estilo de vida. ¿Cómo te mueves por la ciudad? ¿Qué dispositivos usas más?",
+            "¡Excelente! 🌟 Me encanta ayudar a encontrar el seguro perfecto. ¿Podrías contarme qué quieres proteger específicamente? ¿Es algo relacionado con movilidad o tecnología?",
+            "¡Súper! 🚀 Estoy aquí para hacer que elegir tu seguro sea fácil y divertido. ¿Hay algún producto específico que te interese? ¿O prefieres que te cuente sobre nuestras categorías?",
+            "¡Me gusta tu pregunta! 💡 Para darte la respuesta más útil, cuéntame: ¿eres más de andar en bici/patineta/moto, o tu vida gira más en torno a la tecnología?",
+            "¡Perfecto! ✨ Veo que tienes curiosidad por nuestros seguros. ¿Te gustaría que empecemos por conocer qué quieres proteger? ¿Tu movilidad o tus dispositivos tecnológicos?"
+        ];
+        
+        // Si tiene un seguro activo, personalizar la respuesta
+        if (activeSeguro) {
+            return `¡Genial! 😊 Veo que ya tienes activo el ${activeSeguro.planName} para ${activeSeguro.productName}. ¿Tu pregunta es sobre este plan o te interesa algo adicional? Estoy aquí para ayudarte con lo que necesites.`;
+        }
+        
+        // Respuesta general aleatoria
+        return generalResponses[Math.floor(Math.random() * generalResponses.length)];
     }
 
     // Función que se ejecuta cuando el usuario hace clic en el botón de explicación (estrella)
@@ -3361,40 +3489,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Función que se ejecuta cuando el usuario hace clic en el asesor virtual
     function handleVirtualAdvisorClick() {
+        console.log('🚀 handleVirtualAdvisorClick ejecutándose...');
+        
         // Obtener información de los seguros activos para personalizar la bienvenida
         const activeSeguro = getActiveSeguro();
+        console.log('📊 Seguro activo encontrado:', activeSeguro);
+        
         let prompt = "¡Hola! 😊 Soy tu asesor virtual de Seguros Bolívar. ";
         
         if (activeSeguro) {
             prompt += getContextualWelcome(activeSeguro);
+            console.log('💬 Usando prompt contextual');
         } else {
             prompt += "Cuéntame un poco sobre ti y tu día a día para poder recomendarte el seguro perfecto. Por ejemplo, ¿qué dispositivos usas?, ¿cómo te mueves por la ciudad?";
+            console.log('💬 Usando prompt por defecto');
         }
+        
+        console.log('📝 Prompt generado:', prompt);
+        console.log('🎯 Abriendo modal...');
         
         openModal({ 
             type: 'advisor_chat', 
             title: '✨ Asesor Virtual', 
             chatHistory: [{ role: 'model', parts: [{ text: prompt }] }] 
         });
+        
+        console.log('✅ Modal abierto, estado actual:', appState.modal);
     }
 
     // Función para obtener el seguro activo del usuario
     function getActiveSeguro() {
-        for (const category of appState.categories) {
-            for (const product of category.products) {
-                for (const plan of product.plans) {
-                    if (plan.active) {
-                        return {
-                            category: category.id,
-                            categoryTitle: category.title,
-                            product: product.id,
-                            productName: product.name,
-                            plan: plan.id,
-                            planName: plan.name,
-                            price: plan.price,
-                            coverage: plan.coverage,
-                            benefits: plan.benefits
-                        };
+        for (const category of data.categories) {
+            if (category.options) {
+                for (const [productKey, productValue] of Object.entries(category.options)) {
+                    for (const plan of productValue.plans) {
+                        if (plan.active) {
+                            return {
+                                category: category.id,
+                                categoryTitle: category.title,
+                                product: productKey,
+                                productName: productValue.title,
+                                plan: plan.id,
+                                planName: plan.name,
+                                price: plan.price,
+                                coverage: plan.coverage,
+                                benefits: plan.benefits
+                            };
+                        }
                     }
                 }
             }
@@ -3449,25 +3590,79 @@ document.addEventListener('DOMContentLoaded', () => {
         const userInput = chatInput.value;
         if (!userInput.trim() || appState.modal.isLoading) return; // No hace nada si está vacío o cargando
         
-        // Agrega el mensaje del usuario al historial
+        // Agrega el mensaje del usuario al historial (esto SÍ se muestra)
         appState.modal.chatHistory.push({ role: 'user', parts: [{ text: userInput }] });
         chatInput.value = ''; // Limpia el campo de texto
         draw(); // Redibuja para mostrar el mensaje
         
-        // Analizar el contexto del mensaje para dar respuestas inteligentes
+        // Analizar el contexto del mensaje para dar respuestas inteligentes (INTERNO - no se muestra)
         const contextualPrompt = generateContextualPrompt(userInput);
         
-        // Si es el segundo mensaje (primera respuesta del usuario), añade contexto del sistema
-        if (appState.modal.chatHistory.length === 2) { 
-            const systemPrompt = contextualPrompt || `Eres un asesor virtual de Seguros Bolívar, experto en ayudar a jóvenes a encontrar el seguro perfecto. El usuario te ha descrito su situación. Basado en esto, analiza sus necesidades y recomiéndale la categoría de seguro (Transporte o Tecnología) y el plan (Básico, Plus, o Premium) que mejor se adapte a él. Justifica tu recomendación de forma amigable, clara y convincente, usando emojis. A partir de ahora responde a sus preguntas de seguimiento.`;
-            appState.modal.chatHistory.unshift({ role: 'user', parts: [{ text: systemPrompt }] });
-            appState.modal.chatHistory.splice(1, 1); // Remueve el mensaje original de bienvenida
-        } else if (contextualPrompt) {
-            // Para mensajes posteriores, agregar contexto específico si es necesario
-            appState.modal.chatHistory.push({ role: 'user', parts: [{ text: contextualPrompt }] });
+        // Si hay contexto específico, usarlo para generar una respuesta más inteligente
+        if (contextualPrompt) {
+            // En lugar de agregar al historial, generar respuesta directamente
+            generateIntelligentResponseWithContext(contextualPrompt, userInput);
+        } else {
+            // Generar respuesta normal
+            callGemini(); // Obtiene la respuesta de la IA
         }
+    }
 
-        callGemini(); // Obtiene la respuesta de la IA
+    // Nueva función para generar respuestas con contexto sin mostrar el prompt
+    async function generateIntelligentResponseWithContext(contextualPrompt, originalUserInput) {
+        appState.modal.isLoading = true;
+        draw();
+
+        // Simular un pequeño retraso para que parezca más real
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
+
+        try {
+            // Usar el contexto para generar una respuesta más específica
+            let response = generateSpecificResponse(originalUserInput, contextualPrompt);
+            
+            // Si no hay respuesta específica, usar respuesta contextual
+            if (!response) {
+                response = generateContextualResponse(originalUserInput);
+            }
+            
+            // Agregar la respuesta al historial (esto SÍ se muestra)
+            appState.modal.chatHistory.push({ 
+                role: 'model', 
+                parts: [{ text: response }] 
+            });
+            
+        } catch (error) {
+            console.error("Error generando respuesta:", error);
+            // Si hay error, muestra un mensaje de disculpa
+            appState.modal.chatHistory.push({ 
+                role: 'model', 
+                parts: [{ text: 'Lo siento, hubo un problema al procesar tu consulta. ¿Podrías reformular tu pregunta? 😊' }] 
+            });
+        } finally {
+            appState.modal.isLoading = false; // Ya no está cargando
+            // Hace scroll automático hacia abajo para mostrar la respuesta nueva
+            const chatAreaHeight = Math.min(canvas.getBoundingClientRect().height * 0.8, 500) - 160;
+            const maxScroll = Math.max(0, appState.modal.totalChatHeight - chatAreaHeight);
+            appState.modal.scrollOffset = maxScroll;
+            draw();
+        }
+    }
+
+    // Nueva función para generar respuestas específicas basadas en el contexto
+    function generateSpecificResponse(userInput, contextualPrompt) {
+        const input = userInput.toLowerCase();
+        
+        // Respuestas específicas basadas en el tipo de consulta detectada
+        if (contextualPrompt.includes('patineta') || 
+            contextualPrompt.includes('bicicleta') || 
+            contextualPrompt.includes('moto') || 
+            contextualPrompt.includes('celular') || 
+            contextualPrompt.includes('portátil') || 
+            contextualPrompt.includes('gadgets')) {
+            return generateIntelligentResponse(input);
+        }
+        
+        return null; // No hay respuesta específica
     }
 
     // Función para generar prompts contextuales basados en la consulta del usuario
@@ -3583,13 +3778,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Configuración de los eventos del chat
-    chatSubmit.addEventListener('click', handleChatSubmit);
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { // Enter envía el mensaje (Shift+Enter hace salto de línea)
-            e.preventDefault();
-            handleChatSubmit();
-        }
-    });
+    if (chatSubmit) {
+        chatSubmit.addEventListener('click', handleChatSubmit);
+    }
+    
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { // Enter envía el mensaje (Shift+Enter hace salto de línea)
+                e.preventDefault();
+                handleChatSubmit();
+            }
+        });
+    }
 
     // Función para manejar la selección de opciones de transporte
     function handleTransportOptionClick(option) {
