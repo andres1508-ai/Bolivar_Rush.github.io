@@ -1,0 +1,250 @@
+/* Aquí definimos los colores principales de Seguros Bolívar que usaremos en toda la aplicación */
+:root {
+    --bolivar-yellow: #FFD050;    /* Amarillo característico de la marca */
+    --bolivar-green: #016D39;     /* Verde principal de Seguros Bolívar */
+    --bolivar-green-dark: #00592e; /* Verde más oscuro para efectos hover */
+    --text-dark: #333333;         /* Color para textos principales */
+    --text-light: #666666;        /* Color para textos secundarios */
+    --gray-light: #F5F5F5;        /* Gris claro para fondos */
+    --gray-border: #E0E0E0;       /* Gris para bordes */
+    --modal-overlay: rgba(0, 0, 0, 0.6); /* Fondo semi-transparente para ventanas emergentes */
+}
+
+/* Quita cualquier espacio extra que los navegadores ponen por defecto */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden; /* Evita que aparezca barra horizontal */
+}
+
+/* Configuración básica del cuerpo de la página */
+body {
+    font-family: 'Poppins', sans-serif; /* Usa la fuente moderna que cargamos */
+    background-color: #f7f3f3; /* Color de fondo suave */
+    position: relative;
+}
+
+/* Configuración del video que se ve detrás de toda la aplicación */
+#global-background-video {
+    position: fixed;        /* Se queda fijo mientras haces scroll */
+    top: 0;
+    left: 0;
+    min-width: 100vw;       /* Ocupa todo el ancho de la pantalla */
+    min-height: 100vh;      /* Ocupa toda la altura de la pantalla */
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;      /* Se ajusta para cubrir toda la pantalla sin deformarse */
+    object-position: center; /* Se centra el video */
+    z-index: -1;            /* Se pone detrás de todo lo demás */
+    transform: scale(1.01); /* Se hace un poquito más grande para evitar bordes blancos */
+}
+
+/* Esconde los controles del video en navegadores Chrome/Safari */
+#global-background-video::-webkit-media-controls {
+    display: none !important;
+}
+
+#global-background-video::-webkit-media-controls-enclosure {
+    display: none !important;
+}
+
+/* Configuración para la pantalla de login */
+#login-screen {
+    position: relative;
+    overflow: hidden;       /* Corta cualquier cosa que se salga */
+    background: transparent; /* Fondo transparente para que se vea el video global */
+}
+
+/* Asegura que las capas estén en el orden correcto (video atrás, contenido adelante) */
+#login-screen .bg-black {
+    z-index: 10; /* La capa oscura va en nivel 10 */
+}
+
+#login-screen .relative.z-20 {
+    z-index: 20; /* El formulario va en nivel 20 (más adelante) */
+}
+
+/* Estilos adicionales para el video (compatibilidad con todos los navegadores) */
+#login-screen video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;      /* Cubre toda el área sin deformarse */
+    object-position: center;
+    z-index: 0;             /* Va detrás del contenido */
+}
+
+/* Esconde controles en navegadores Chrome/Safari */
+#login-screen video::-webkit-media-controls {
+    display: none !important;
+}
+
+#login-screen video::-webkit-media-controls-enclosure {
+    display: none !important;
+}
+
+/* Asegura que las capas estén ordenadas correctamente */
+#login-screen .bg-black {
+    z-index: 10;
+}
+
+#login-screen .relative.z-20 {
+    z-index: 20;
+}
+
+/* Aplicamos los colores de la marca a los elementos */
+.bg-bolivar-green { 
+    background-color: var(--bolivar-green); 
+}
+.hover\:bg-bolivar-green-dark:hover { 
+    background-color: var(--bolivar-green-dark); 
+}
+.text-bolivar-green { 
+    color: var(--bolivar-green); 
+}
+.focus\:ring-bolivar-yellow:focus { 
+    --tw-ring-color: var(--bolivar-yellow); 
+}
+
+
+/* Contenedor donde se dibuja toda la interfaz interactiva */
+#canvas-container {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;      /* No se hace más ancho que esto */
+    margin: auto;           /* Se centra en la pantalla */
+    aspect-ratio: 16 / 9;   /* Mantiene proporción de pantalla ancha */
+    box-shadow: none;       /* Sin sombra */
+    border-radius: 1rem;    /* Esquinas redondeadas */
+    overflow: hidden;       /* Corta lo que se salga */
+    border: none;           /* Sin borde */
+    min-height: 600px;      /* Altura mínima */
+    background-color: transparent; /* Fondo transparente para ver el video */
+    backdrop-filter: blur(10px);   /* Efecto de desenfoque para elegancia */
+    -webkit-backdrop-filter: blur(10px); /* Mismo efecto para Safari */
+}
+
+/* El lienzo donde se dibuja todo */
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: transparent; /* Transparente para ver el video de fondo */
+}
+
+/* Configuración específica del canvas principal */
+#dashboard-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Ventana de chat con el asesor virtual */
+#chat-interface {
+    position: fixed;        /* Se queda fijo en la pantalla */
+    bottom: 20px;          /* 20px desde abajo */
+    left: 50%;             /* Se centra horizontalmente */
+    transform: translateX(-50%); /* Ajuste fino para centrarlo */
+    width: 90%;            /* Ocupa el 90% del ancho disponible */
+    max-width: 600px;      /* Pero no más de 600px */
+    display: none;         /* Inicialmente oculto */
+    gap: 10px;             /* Espacio entre elementos */
+    padding: 15px;         /* Espacio interior */
+    background: rgb(255, 255, 255); /* Fondo blanco */
+    border-radius: 10px;   /* Esquinas redondeadas */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Sombra sutil */
+}
+
+/* Área donde el usuario escribe mensajes */
+#chat-input {
+    flex-grow: 1;          /* Ocupa todo el espacio disponible */
+    border-radius: 1rem;   /* Esquinas muy redondeadas */
+    border: 1px solid var(--gray-border); /* Borde gris claro */
+    padding: 0.75rem;      /* Espacio interior */
+    font-size: 1rem;       /* Tamaño de letra normal */
+    font-family: 'Poppins', sans-serif; /* Misma fuente que toda la app */
+    resize: none;          /* No se puede cambiar el tamaño */
+}
+
+/* Botón para enviar mensajes */
+#chat-submit {
+    padding: 0.75rem;      /* Espacio interior */
+    border-radius: 50%;    /* Completamente redondo */
+    background-color: var(--bolivar-green); /* Color verde de la marca */
+    color: white;          /* Texto blanco */
+    border: none;          /* Sin borde */
+    font-weight: bold;     /* Texto en negrita */
+    cursor: pointer;       /* Manita cuando pasas el mouse */
+    width: 50px;           /* Ancho fijo */
+    height: 50px;          /* Alto fijo (lo hace circular) */
+    flex-shrink: 0;        /* No se encoge aunque falte espacio */
+}
+
+/* Efecto cuando pasas el mouse sobre el botón de enviar */
+#chat-submit:hover {
+    background-color: var(--bolivar-green-dark);
+}
+
+/* Estilos especiales para pantallas de celular */
+@media (max-width: 768px) {
+    #canvas-container {
+        min-height: 100vh;  /* En celular, ocupa toda la altura de la pantalla */
+    }
+    #chat-interface {
+        padding: 10px;      /* Menos espacio interior en pantallas pequeñas */
+    }
+    
+    /* Mejoras para el video en celulares */
+    #global-background-video {
+        width: 100vw;       /* Ancho completo */
+        height: 100vh;      /* Alto completo */
+        min-width: 100vw;   
+        min-height: 100vh;
+        object-fit: cover;  /* Cubre toda la pantalla */
+        object-position: center center; /* Centrado perfecto */
+    }
+}
+
+/* Ajustes para pantallas muy anchas (como monitores de computadora) */
+@media (min-aspect-ratio: 16/9) {
+    #global-background-video {
+        width: 100vw;       /* Ancho completo */
+        height: auto;       /* Alto automático */
+        min-height: 100vh;  /* Pero mínimo toda la altura */
+    }
+}
+
+/* Ajustes para pantallas altas (como celulares en vertical) */
+@media (max-aspect-ratio: 16/9) {
+    #global-background-video {
+        width: auto;        /* Ancho automático */
+        height: 100vh;      /* Alto completo */
+        min-width: 100vw;   /* Pero mínimo todo el ancho */
+    }
+}
+
+/* Configuración especial para celulares en posición vertical */
+@media screen and (orientation: portrait) {
+    #global-background-video {
+        width: auto;
+        height: 100vh;
+        min-width: 100vw;
+        object-fit: cover;
+        object-position: center center;
+    }
+}
+
+/* Configuración especial para pantallas horizontales */
+@media screen and (orientation: landscape) {
+    #global-background-video {
+        width: 100vw;
+        height: auto;
+        min-height: 100vh;
+        object-fit: cover;
+        object-position: center center;
+    }
+}
